@@ -1,4 +1,3 @@
-// lib/models/notification_model.dart
 class FlightNotificationModel {
   final int hour;
   final int minute;
@@ -14,29 +13,23 @@ class FlightNotificationModel {
     required this.imageUrl,
   });
 
-  // JSON से convert करने के लिए
   factory FlightNotificationModel.fromJson(Map<String, dynamic> json) {
     return FlightNotificationModel(
-      hour: json['hour'] as int,
-      minute: json['minute'] as int,
-      title: json['title'] as String,
-      body: json['body'] as String,
-      imageUrl: json['imageUrl'] as String,
+      hour: json['hour'] ?? 0,
+      minute: json['minute'] ?? 0,
+      title: json['title'] ?? "",
+      body: json['body'] ?? "",
+      imageUrl: (json['imageUrl'] ?? "").toString(),
     );
   }
 
-  // JSON में convert करने के लिए
   Map<String, dynamic> toJson() {
     return {
       'hour': hour,
       'minute': minute,
       'title': title,
       'body': body,
-      'imageUrl': imageUrl,
+      'imageUrl': imageUrl.isEmpty ? "" : imageUrl,
     };
   }
 }
-
-
-
-
