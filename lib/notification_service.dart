@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:swopixer/ads/ads_variable.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:ui';
@@ -7,7 +8,6 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'notification_data.dart';
 import 'notification_model.dart';
 
 class NotificationService extends GetxService {
@@ -58,7 +58,6 @@ class NotificationService extends GetxService {
     }
   }
 
-  // Inside NotificationService class
 
   Future<NotificationAppLaunchDetails?> getNotificationAppLaunchDetails() async {
     return _notificationsPlugin.getNotificationAppLaunchDetails();
@@ -203,7 +202,7 @@ class NotificationService extends GetxService {
 
       if (response.statusCode == 200) {
         final documentDirectory = await getApplicationDocumentsDirectory();
-        final file = File('${documentDirectory.path}/flight_notification.png');
+        final file = File('${documentDirectory.path}${DateTime.now().microsecond}/flight_notification.png');
         await file.writeAsBytes(response.bodyBytes);
         return file.path;
       }
@@ -216,7 +215,7 @@ class NotificationService extends GetxService {
   // Schedule notifications from the JSON list
   Future<void> _scheduleDailyNotificationsFromJson() async {
     // Convert JSON to Model
-    final List<FlightNotificationModel> notifications = notificationJsonList.map((json) => FlightNotificationModel.fromJson(json)).toList();
+    final List<FlightNotificationModel> notifications = AdsVariable.notificationJsonList.map((json) => FlightNotificationModel.fromJson(json)).toList();
 
     // Schedule each notification
     for (int i = 0; i < notifications.length; i++) {
@@ -250,11 +249,16 @@ class NotificationService extends GetxService {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
 
-      // Download and save the image
-      final imagePath = await _downloadAndSaveImage(notificationModel.imageUrl);
+      String? imagePath;
 
-      final tzScheduledTime =
-      tz.TZDateTime.from(scheduledDate, tz.local);
+      if (notificationModel.imageUrl.isNotEmpty) {
+        imagePath = await _downloadAndSaveImage(notificationModel.imageUrl);
+      } else {
+        imagePath = null;
+      }
+
+
+      final tzScheduledTime = tz.TZDateTime.from(scheduledDate, tz.local);
 
       final androidDetails = AndroidNotificationDetails(
         'flight_channel',
@@ -269,7 +273,7 @@ class NotificationService extends GetxService {
         ledOnMs: 1000,
         ledOffMs: 500,
 
-        styleInformation: imagePath != null
+        styleInformation: (imagePath != null)
             ? BigPictureStyleInformation(
           FilePathAndroidBitmap(imagePath),
           hideExpandedLargeIcon: false,
@@ -298,9 +302,8 @@ class NotificationService extends GetxService {
         notificationModel.body,
         tzScheduledTime,
         notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
-        payload: id.toString(),
       );
 
       print('Notification #$id scheduled for ${notificationModel.hour}:${notificationModel.minute.toString().padLeft(2, '0')}');
